@@ -64,7 +64,10 @@ module TicTacDoe
   class Player 
     attr_reader :name
     attr_accessor :marker
+
     attr_reader :past_boards
+    attr_reader :current_board
+
     attr_reader :past_sequences
     attr_reader :current_sequence
   
@@ -112,33 +115,48 @@ module TicTacDoe
     def draw!
       @current_sequence.draw!
     end
+    
+    def inspect
+      "#<Player::#{self.object_id} @name=#{self.name}>"
+    end
   end
 
   class NovicePlayer < Player
-    def play board
-      position = board.open_positions.shuffle.pop
-      board.play self, position
+    def play
+      position = current_board.open_positions.shuffle.pop
+      current_board.play self, position
     end    
   end
 
   class SkilledPlayer < Player
-    attr_reader :current_board
-  
-    def play board
-      turns_so_far = @current_sequence.moves.map(&:turn)
-      next_turn = games_won.detect{|moves| moves.next_turn turns_so_far, board.open_positions }
-      next_turn ||= games_drawn.detect{|moves| moves.next_turn turns_so_far, board.open_positions }
-      next_turn = board.open_positions.shuffle.pop
-      @current_sequence.play board, next_turn
+    def random_turn
+      current_board.open_positions.shuffle.pop
+    end
     
-      board.play self, next_turn
+    def next_turn
+      turns_so_far = @current_sequence.moves.map(&:turn)
+      return random_turn if turns_so_far.size < 2
+    
+      sequence = games_won.detect{|moves| moves.next_turn turns_so_far, current_board.open_positions }
+      sequence ||= games_drawn.detect{|moves| moves.next_turn turns_so_far, current_board.open_positions }
+
+      return random_turn unless sequence
+      sequence.next_turn(turns_so_far, current_board.open_positions)
+    end
+    
+    def play
+      @current_sequence.play current_board, next_turn
+      current_board.play self, next_turn
     end    
+
   end
 
   class Board
     attr_reader :positions
     attr_reader :player1, :player2, :current_player, :winning_player, :losing_player
 
+    POSITIONS = 9
+    
     WINS = [
       [0,1,2], 
       [3,4,5], 
@@ -173,7 +191,7 @@ module TicTacDoe
     end
   
     def turn
-      9 - open_positions.count
+      POSITIONS - open_positions.count
     end
   
     def draw
@@ -188,7 +206,11 @@ module TicTacDoe
     def play player, position
       raise "Not Your Turn!" unless player == @current_player
       # puts "#{player.name} plays position #{position}"
-      @positions[position-1] = player
+      begin
+        @positions[position-1] = player
+      rescue
+        raise position.class.to_s.inspect
+      end
       @current_player = @current_player == player1 ? player2 : player1
     end
 
@@ -208,12 +230,8 @@ module TicTacDoe
       WINS.each do |cells|
         combo = cells.map{|cell| positions[cell]}
         combo.select{ |position| position.is_a? Player }
-        if combo.count == 3 && combo.uniq.size == 1
-          record_win combo.first
-          return true
-        end
+        return combo.first if combo.count == 3 && combo.uniq.size == 1
       end
-      record_draw
       return false
     end
 
@@ -240,12 +258,14 @@ module TicTacDoe
     def play!
       while not board.game_over? do 
         "It's #{board.current_player.name}'s turn!"
-        board.current_player.play board
+        board.current_player.play
       end
 
-      if board.game_won?
+      if winner = board.game_won?
+        board.record_win winner
         puts "The game was won by #{board.winning_player.name}"
       else
+        board.record_draw
         puts "The game was a draw"
       end
       board.draw
