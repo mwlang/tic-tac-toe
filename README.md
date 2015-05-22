@@ -12,3 +12,16 @@ Adapted from Ruby Quiz #11, please don't look at the answers or outside
 discussion.
 
 
+ 1 | 2 | 3  
+---+---+---
+ 4 | 5 | 6
+---+---+---
+ 7 | 8 | 9
+
+Board will be represented by a Board class and ultimately an array [0..8]
+
+An array of winning moves can be used to check moves against the board to determine if anyone has one.
+
+players play the game so have a Player class from which we derive HumanPlayer and ComputerPlayer
+
+Have Game object that tracks the game, turns, moves as well as prompts for player's turn
