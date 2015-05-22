@@ -1,4 +1,12 @@
 module TicTacDoe
+  POSITIONS = 9
+  
+  WINS = [
+    [0,1,2], [3,4,5], [6,7,8], 
+    [0,3,6], [1,4,7], [2,5,8], 
+    [1,4,8], [2,4,6]
+  ]
+
   class Empty
     attr_reader :position
     def initialize position
@@ -46,12 +54,18 @@ module TicTacDoe
     def draw!
       @result = :draw
     end
+
+    def sequence
+      @moves.map(&:turn)
+    end
     
     def next_turn turns_so_far, open_positions
-      turns = @moves.map(&:turn).slice(0, turns_so_far.size)
-      turn = @moves[turns_so_far.size] ? @moves[turns_so_far.size].turn : nil
-      # puts [turn, open_positions,turns_so_far, turns].inspect
-      return nil unless turn
+      future_turns = Array sequence.slice(turns_so_far.size, POSITIONS)
+      return if future_turns.empty? || (future_turns & open_positions) != future_turns
+
+      turns = sequence.slice(0, turns_so_far.size)
+      turn = future_turns.first
+
       if turns == turns_so_far && open_positions.include?(turn)
         puts "picking #{@result} turn #{turn} for #{turns_so_far.inspect}"
         return turn 
@@ -148,28 +162,12 @@ module TicTacDoe
       @current_sequence.play current_board, next_turn
       current_board.play self, next_turn
     end    
-
   end
 
   class Board
     attr_reader :positions
     attr_reader :player1, :player2, :current_player, :winning_player, :losing_player
 
-    POSITIONS = 9
-    
-    WINS = [
-      [0,1,2], 
-      [3,4,5], 
-      [6,7,8], 
-    
-      [0,3,6], 
-      [1,4,7], 
-      [2,5,8], 
-    
-      [1,4,8], 
-      [2,4,6]
-    ]
-  
     def initialize(player1, player2)
       @positions = Array.new(9.times.map{|i| Empty.new i + 1})
       @player1, @player2 = [player1, player2].shuffle
@@ -275,7 +273,7 @@ module TicTacDoe
   novice_computer = NovicePlayer.new("Novice") 
   skilled_computer = SkilledPlayer.new("Skilled")
 
-  122.times do 
+  300.times do 
     game = Game.new novice_computer, skilled_computer
     game.play!
   end
