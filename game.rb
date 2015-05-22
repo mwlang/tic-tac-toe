@@ -49,15 +49,12 @@ module TicTacDoe
     
     def next_turn turns_so_far, open_positions
       turns = @moves.map(&:turn).slice(0, turns_so_far.size)
-      turn = @moves[turns_so_far.size].turn rescue nil
-      return unless turn
+      turn = @moves[turns_so_far.size] ? @moves[turns_so_far.size].turn : nil
+      # puts [turn, open_positions,turns_so_far, turns].inspect
+      return nil unless turn
       if turns == turns_so_far && open_positions.include?(turn)
         puts "picking #{@result} turn #{turn} for #{turns_so_far.inspect}"
         return turn 
-      else
-        # puts '*' * 20
-        # puts [turn, open_positions].inspect
-        puts [turns_so_far, turns].inspect
       end
       
       return nil
@@ -190,7 +187,7 @@ module TicTacDoe
   
     def play player, position
       raise "Not Your Turn!" unless player == @current_player
-      puts "#{player.name} plays position #{position}"
+      # puts "#{player.name} plays position #{position}"
       @positions[position-1] = player
       @current_player = @current_player == player1 ? player2 : player1
     end
@@ -238,7 +235,6 @@ module TicTacDoe
       puts "player 2: #{board.player2.name} playing as #{board.player2.marker}"
       player1.start! @board
       player2.start! @board
-      board.draw
     end
   
     def play!
@@ -252,13 +248,14 @@ module TicTacDoe
       else
         puts "The game was a draw"
       end
+      board.draw
     end
   end
 
   novice_computer = NovicePlayer.new("Novice") 
   skilled_computer = SkilledPlayer.new("Skilled")
 
-  12.times do 
+  122.times do 
     game = Game.new novice_computer, skilled_computer
     game.play!
   end
